@@ -68,6 +68,11 @@
       border: 1px solid #333;
       border-radius: 8px;
       margin: 50px 0;
+      font-size: 18px;
+    }
+    .terminal-header .line {
+      margin: 0 0 10px 0; /* Increased spacing between lines */
+      white-space: pre-wrap;
     }
     .terminal-header p {
       margin: 0 0 10px 0;
@@ -159,20 +164,9 @@
 <body>
 
   <!-- NEW Landing Section -->
-  <header class="terminal-header">
-    <p><span class="prompt">></span> <span class="command">whoami</span></p>
-    <p>Matthias Petry</p>
-    
-    <p><span class="prompt">></span> <span class="command">status</span></p>
-    <p>A project a day until I'm hired or profitable.</p>
-    
-    <p><span class="prompt">></span> <span class="command">ls -l</span></p>
-    <p>
-      <a href="#about">about/</a>
-      <a href="#projects">projects/</a>
-      <a href="#contact">contact/</a>
-    </p>
-    <p><span class="prompt">></span><span class="cursor">_</span></p>
+  <header class="terminal-header" id="terminalHeader">
+    <!-- Content will be dynamically added here by JavaScript -->
+    <div class="line"><span class="prompt">></span><span id="terminalCursor" class="cursor">_</span></div>
   </header>
 
   <hr>
@@ -282,6 +276,87 @@
       idx = (idx - 1 + images.length) % images.length;
       images[idx].style.display = "block";
     }
+
+    // Terminal animation logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const terminalHeader = document.getElementById('terminalHeader');
+      const terminalCursor = document.getElementById('terminalCursor');
+
+      // Define the sequence of terminal lines
+      const terminalLines = [
+        { type: 'command', text: 'whoami' },
+        { type: 'output', text: 'Matthias Petry', delay: 200 },
+        { type: 'command', text: 'status', delay: 400 },
+        { type: 'output', text: 'A project a day until I\'m hired or profitable.', delay: 200 },
+        { type: 'command', text: 'ls -l', delay: 400 },
+        { type: 'output', text: '<a href="#about">about/</a><a href="#projects">projects/</a><a href="#contact">contact/</a>', delay: 200, isHTML: true }
+      ];
+
+      let lineIndex = 0;
+      let charIndex = 0;
+      let currentLineElement;
+      let currentTextElement;
+
+      function typeWriter() {
+        if (lineIndex < terminalLines.length) {
+          const lineData = terminalLines[lineIndex];
+
+          if (charIndex === 0) {
+            // Create a new line element for the current command/output
+            currentLineElement = document.createElement('div');
+            currentLineElement.classList.add('line');
+            terminalHeader.insertBefore(currentLineElement, terminalCursor.parentElement); // Insert before the cursor line
+
+            // Create the text element (command or output)
+            if (lineData.type === 'command') {
+              const promptSpan = document.createElement('span');
+              promptSpan.classList.add('prompt');
+              promptSpan.textContent = '> ';
+              currentLineElement.appendChild(promptSpan);
+              currentTextElement = document.createElement('span');
+              currentTextElement.classList.add('command');
+            } else {
+              currentTextElement = document.createElement('span');
+              currentTextElement.classList.add('output');
+            }
+            currentLineElement.appendChild(currentTextElement);
+            
+            // Scroll to bottom to keep the new line in view
+            terminalHeader.scrollTop = terminalHeader.scrollHeight;
+          }
+
+          // Type out characters
+          if (charIndex < lineData.text.length) {
+            terminalCursor.classList.remove('blinking'); // Hide blink during typing
+            terminalCursor.classList.add('solid'); // Make cursor solid
+            if (lineData.isHTML) {
+                // If it's HTML, append character by character but handle tags
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = lineData.text.substring(0, charIndex + 1);
+                currentTextElement.innerHTML = tempDiv.innerHTML;
+            } else {
+                currentTextElement.textContent = lineData.text.substring(0, charIndex + 1);
+            }
+            charIndex++;
+            setTimeout(typeWriter, 20); // Faster typing speed
+          } else {
+            // Line finished typing
+            terminalCursor.classList.remove('solid'); // Remove solid cursor
+            terminalCursor.classList.add('blinking'); // Start blinking again
+            lineIndex++;
+            charIndex = 0;
+            // Add a delay before the next line starts
+            setTimeout(typeWriter, lineData.delay || 300); // Reduced default delay
+          }
+        } else {
+          // All lines typed, keep cursor blinking
+          terminalCursor.classList.add('blinking');
+        }
+      }
+
+      // Start the animation when the page loads
+      typeWriter();
+    });
   </script>
 </body>
 </html>
